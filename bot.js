@@ -215,7 +215,7 @@ function summarizeMessage(message) {
   }
 
   if (message.location) {
-    return message.location;
+    return `[location] ${Number(message.location.latitude).toFixed(5)}, ${Number(message.location.longitude).toFixed(5)}`;
   }
 
   if (message.sticker) {
@@ -363,9 +363,21 @@ function getMessageMedia(message) {
   );
 }
 
+function getMessageLocation(message) {
+  if (!message.location) {
+    return null;
+  }
+
+  return {
+    latitude: Number(message.location.latitude || 0),
+    longitude: Number(message.location.longitude || 0),
+  };
+}
+
 function normalizeMessage(message, meta) {
   const createdAtSeconds = message.edit_date || message.date || Math.floor(Date.now() / 1000);
   const media = getMessageMedia(message);
+  const location = getMessageLocation(message);
 
   return {
     chatId: String(message.chat?.id ?? message.from?.id ?? "unknown"),
@@ -380,6 +392,7 @@ function normalizeMessage(message, meta) {
     source: meta.source,
     text: summarizeMessage(message),
     time: formatUnixTime(createdAtSeconds),
+    location,
     media: media || null,
     updateId: meta.updateId ?? null,
     updateType: meta.updateType,

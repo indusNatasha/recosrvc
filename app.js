@@ -22,9 +22,9 @@ import {
 import {
   clearAllStores,
   ENCRYPTED_TOKEN_KEY,
+  getAllMessages,
   getChats,
   getLatestUpdateOffset,
-  getMessages,
   getSetting,
   getUpdatesCount,
   POLL_OFFSET_KEY,
@@ -52,6 +52,8 @@ const elements = getElements();
 
 const state = {
   activeChatId: "",
+  activeTab: "chat",
+  allMessages: [],
   auth: {
     entry: [],
     firstEntry: [],
@@ -63,12 +65,21 @@ const state = {
   botToken: "",
   composerBusy: false,
   hasStoredToken: false,
+  mapDrawerGroupKey: "",
+  mapInstance: null,
+  mapMarkers: [],
   pollOffset: 0,
   pollRunId: 0,
   polling: false,
 };
 
 const fileUrlCache = new Map();
+const LIBRARY_SECTIONS = [
+  { id: "photo", title: "Фото" },
+  { id: "video", title: "Видео" },
+  { id: "audio", title: "Аудио" },
+  { id: "text", title: "Текст" },
+];
 
 function getStoredMedia(message) {
   if (message.media) {
@@ -86,6 +97,90 @@ function getStoredMedia(message) {
     thumbFileId: message.thumbFileId || "",
     width: Number(message.mediaWidth || 0),
   };
+}
+
+function getMessageLocation(message) {
+  if (!message || !message.location) {
+    return null;
+  }
+
+  if (
+    !Number.isFinite(Number(message.location.latitude)) ||
+    !Number.isFinite(Number(message.location.longitude))
+  ) {
+    return null;
+  }
+
+  return {
+    latitude: Number(message.location.latitude),
+    longitude: Number(message.location.longitude),
+  };
+}
+
+function getLibrarySectionId(message) {
+  const media = getStoredMedia(message);
+
+  if (media?.kind === "photo") {
+    return "photo";
+  }
+
+  if (media?.kind === "video") {
+    return "video";
+  }
+
+  if (media?.kind === "audio" || media?.kind === "voice") {
+    return "audio";
+  }
+
+  if (!media && !getMessageLocation(message) && message.text) {
+    return "text";
+  }
+
+  return "";
+}
+
+function formatLocationLabel(location) {
+  if (!location) {
+    return "";
+  }
+
+  return `${location.latitude.toFixed(5)}, ${location.longitude.toFixed(5)}`;
+}
+
+function buildLocationGroups(messages) {
+  const groupsMap = new Map();
+
+  messages.forEach((message) => {
+    const location = getMessageLocation(message);
+    let group;
+    let key;
+
+    if (!location) {
+      return;
+    }
+
+    key = `${location.latitude.toFixed(5)}:${location.longitude.toFixed(5)}`;
+    group = groupsMap.get(key);
+
+    if (!group) {
+      group = {
+        key,
+        latitude: location.latitude,
+        longitude: location.longitude,
+        items: [],
+      };
+      groupsMap.set(key, group);
+    }
+
+    group.items.push(message);
+  });
+
+  return Array.from(groupsMap.values())
+    .map((group) => {
+      group.items.sort((left, right) => (right.createdAt || 0) - (left.createdAt || 0));
+      return group;
+    })
+    .sort((left, right) => (right.items[0]?.createdAt || 0) - (left.items[0]?.createdAt || 0));
 }
 
 function getAllEmojiIds() {
@@ -151,6 +246,267 @@ function syncComposer() {
     enabled: Boolean(state.botToken && state.activeChatId),
     placeholder,
   });
+}
+
+function syncTabs() {
+  elements.tabButtons.forEach((button) => {
+    button.classList.toggle("active", button.dataset.tab === state.activeTab);
+  });
+
+  elements.tabPanels.forEach((panel) => {
+    panel.classList.toggle("active", panel.dataset.panel === state.activeTab);
+  });
+}
+
+function buildMediaNode(message) {
+  const media = getStoredMedia(message);
+  const mediaView = message.mediaView || {};
+  let node;
+
+  if (!media) {
+    return null;
+  }
+
+  if (media.kind === "photo" && (mediaView.mediaUrl || mediaView.thumbUrl)) {
+    node = document.createElement("img");
+    node.className = "library-media";
+    node.src = mediaView.mediaUrl || mediaView.thumbUrl;
+    node.alt = message.text || "photo";
+    node.loading = "lazy";
+    return node;
+  }
+
+  if (media.kind === "video" && mediaView.mediaUrl) {
+    node = document.createElement("video");
+    node.className = "library-media";
+    node.controls = true;
+    node.playsInline = true;
+    node.preload = "metadata";
+    node.src = mediaView.mediaUrl;
+
+    if (mediaView.thumbUrl) {
+      node.poster = mediaView.thumbUrl;
+    }
+
+    return node;
+  }
+
+  if ((media.kind === "audio" || media.kind === "voice") && mediaView.mediaUrl) {
+    node = document.createElement("audio");
+    node.className = "library-audio";
+    node.controls = true;
+    node.preload = "metadata";
+    node.src = mediaView.mediaUrl;
+    return node;
+  }
+
+  return null;
+}
+
+function renderLibrary() {
+  const groups = LIBRARY_SECTIONS.map((section) => {
+    return {
+      ...section,
+      items: state.allMessages.filter((message) => getLibrarySectionId(message) === section.id),
+    };
+  }).filter((section) => section.items.length);
+
+  const mediaCount = groups
+    .filter((section) => section.id !== "text")
+    .reduce((sum, section) => sum + section.items.length, 0);
+  const textCount = groups
+    .filter((section) => section.id === "text")
+    .reduce((sum, section) => sum + section.items.length, 0);
+
+  elements.libraryBadge.textContent = `${mediaCount} медиа`;
+  elements.libraryTextBadge.textContent = `${textCount} текстов`;
+  elements.libraryGroups.innerHTML = "";
+
+  if (!groups.length) {
+    elements.libraryGroups.innerHTML =
+      '<div class="panel-empty">Файлов и текстов пока нет. Сначала получи сообщения от Telegram.</div>';
+    return;
+  }
+
+  groups.forEach((section, index) => {
+    const details = document.createElement("details");
+    const summary = document.createElement("summary");
+    const itemsWrap = document.createElement("div");
+
+    details.className = "library-group";
+    details.open = index === 0;
+    summary.className = "library-summary";
+    summary.innerHTML = `<span>${section.title}</span><span class="badge">${section.items.length}</span>`;
+    itemsWrap.className = "library-items";
+
+    section.items.forEach((message) => {
+      const item = document.createElement("article");
+      const meta = document.createElement("div");
+      const title = document.createElement("p");
+      let text;
+      const mediaNode = buildMediaNode(message);
+      const location = getMessageLocation(message);
+
+      item.className = "library-item";
+      meta.className = "library-item-meta";
+      meta.textContent = `${message.chatTitle || "Chat"} • ${message.senderName || "Telegram"} • ${message.time || ""}`;
+      title.className = "library-item-title";
+      item.appendChild(meta);
+
+      if (section.id !== "text") {
+        title.textContent = message.text || "Без подписи";
+        item.appendChild(title);
+      }
+
+      if (location) {
+        text = document.createElement("p");
+        text.className = "library-item-text";
+        text.textContent = `Локация: ${formatLocationLabel(location)}`;
+        item.appendChild(text);
+      }
+
+      if (mediaNode) {
+        item.appendChild(mediaNode);
+      }
+
+      if (section.id === "text" && message.text) {
+        text = document.createElement("p");
+        text.className = "library-item-text";
+        text.textContent = message.text;
+        item.appendChild(text);
+      }
+
+      itemsWrap.appendChild(item);
+    });
+
+    details.appendChild(summary);
+    details.appendChild(itemsWrap);
+    elements.libraryGroups.appendChild(details);
+  });
+}
+
+function renderMapDrawer(group) {
+  elements.mapDrawerList.innerHTML = "";
+
+  if (!group) {
+    elements.mapDrawer.classList.add("hidden");
+    elements.mapDrawer.setAttribute("aria-hidden", "true");
+    return;
+  }
+
+  elements.mapDrawerTitle.textContent = `Точка • ${formatLocationLabel(group)}`;
+
+  group.items.forEach((message) => {
+    const item = document.createElement("article");
+    const meta = document.createElement("p");
+    const text = document.createElement("p");
+
+    item.className = "map-drawer-item";
+    meta.className = "map-drawer-meta";
+    meta.textContent = `${message.chatTitle || "Chat"} • ${message.senderName || "Telegram"} • ${message.time || ""}`;
+    text.className = "map-drawer-text";
+    text.textContent = message.text || `Локация ${formatLocationLabel(getMessageLocation(message))}`;
+
+    item.appendChild(meta);
+    item.appendChild(text);
+    elements.mapDrawerList.appendChild(item);
+  });
+
+  elements.mapDrawer.classList.remove("hidden");
+  elements.mapDrawer.setAttribute("aria-hidden", "false");
+}
+
+function closeMapDrawer() {
+  state.mapDrawerGroupKey = "";
+  renderMapDrawer(null);
+}
+
+function ensureMap() {
+  if (state.mapInstance || !window.maplibregl || !elements.mapCanvas) {
+    return;
+  }
+
+  state.mapInstance = new window.maplibregl.Map({
+    container: "map-canvas",
+    style: "https://tiles.openfreemap.org/styles/liberty",
+    center: [104.9282, 11.5564],
+    zoom: 11,
+    attributionControl: false,
+  });
+
+  state.mapInstance.addControl(new window.maplibregl.NavigationControl(), "top-right");
+}
+
+function renderMapMarkers() {
+  const groups = buildLocationGroups(state.allMessages);
+  let bounds;
+
+  elements.mapPointsBadge.textContent = `${groups.length} точек`;
+  elements.mapMessagesBadge.textContent = `${groups.reduce((sum, group) => sum + group.items.length, 0)} локаций`;
+  elements.mapEmpty.classList.toggle("hidden", groups.length > 0);
+
+  if (!state.mapInstance && state.activeTab !== "map") {
+    if (state.mapDrawerGroupKey) {
+      renderMapDrawer(groups.find((group) => group.key === state.mapDrawerGroupKey) || null);
+    }
+    return;
+  }
+
+  ensureMap();
+
+  if (!state.mapInstance) {
+    return;
+  }
+
+  state.mapMarkers.forEach((marker) => marker.remove());
+  state.mapMarkers = [];
+  bounds = new window.maplibregl.LngLatBounds();
+
+  groups.forEach((group) => {
+    const el = document.createElement("button");
+    const count = document.createElement("span");
+
+    el.type = "button";
+    el.className = "map-marker";
+    count.className = "map-marker-count";
+    count.textContent = String(group.items.length);
+    el.appendChild(count);
+    el.addEventListener("click", () => {
+      state.mapDrawerGroupKey = group.key;
+      renderMapDrawer(group);
+      state.mapInstance.flyTo({
+        center: [group.longitude, group.latitude],
+        zoom: Math.max(state.mapInstance.getZoom(), 13),
+        essential: true,
+      });
+    });
+
+    state.mapMarkers.push(
+      new window.maplibregl.Marker({ element: el, anchor: "bottom" })
+        .setLngLat([group.longitude, group.latitude])
+        .addTo(state.mapInstance)
+    );
+
+    bounds.extend([group.longitude, group.latitude]);
+  });
+
+  if (state.activeTab === "map" && groups.length === 1) {
+    state.mapInstance.flyTo({
+      center: [groups[0].longitude, groups[0].latitude],
+      zoom: 13,
+      essential: true,
+    });
+  } else if (state.activeTab === "map" && groups.length > 1) {
+    state.mapInstance.fitBounds(bounds, {
+      padding: 48,
+      maxZoom: 13,
+      duration: 0,
+    });
+  }
+
+  if (state.mapDrawerGroupKey) {
+    renderMapDrawer(groups.find((group) => group.key === state.mapDrawerGroupKey) || null);
+  }
 }
 
 async function resolveFileUrl(fileId) {
@@ -221,22 +577,31 @@ async function enrichMessagesMedia(messages) {
 
 async function loadChatsAndMessages() {
   try {
+    const allMessagesResult = await getAllMessages();
     const chatsResult = await getChats();
+
+    if (allMessagesResult.error) {
+      setStatus(elements, describeError(allMessagesResult.error));
+      return;
+    }
+
     if (chatsResult.error) {
       setStatus(elements, describeError(chatsResult.error));
       return;
     }
 
+    state.allMessages = allMessagesResult.data || [];
     state.activeChatId = renderChats(elements, chatsResult.data, state.activeChatId);
+    const mediaResult = await enrichMessagesMedia(state.allMessages);
+    const viewMessages = mediaResult.data || state.allMessages;
+    const activeMessages = viewMessages
+      .filter((message) => message.chatId === state.activeChatId)
+      .sort((left, right) => (left.createdAt || 0) - (right.createdAt || 0));
 
-    const messagesResult = await getMessages(state.activeChatId);
-    if (messagesResult.error) {
-      setStatus(elements, describeError(messagesResult.error));
-      return;
-    }
-
-    const mediaResult = await enrichMessagesMedia(messagesResult.data);
-    renderMessages(elements, mediaResult.data || messagesResult.data);
+    state.allMessages = viewMessages;
+    renderMessages(elements, activeMessages);
+    renderLibrary();
+    renderMapMarkers();
 
     const countResult = await getUpdatesCount();
     setUpdatesCount(elements, countResult.data || 0);
@@ -585,14 +950,12 @@ async function handleSendMessage(event) {
 
 async function handleChatChange() {
   state.activeChatId = elements.chatPicker.value;
-  const result = await getMessages(state.activeChatId);
-
-  if (result.error) {
-    setStatus(elements, describeError(result.error));
-    return;
-  }
-
-  renderMessages(elements, result.data);
+  renderMessages(
+    elements,
+    state.allMessages
+      .filter((message) => message.chatId === state.activeChatId)
+      .sort((left, right) => (left.createdAt || 0) - (right.createdAt || 0))
+  );
   syncComposer();
 }
 
@@ -607,11 +970,19 @@ async function handleWipe() {
   }
 
   state.activeChatId = "";
+  state.activeTab = "chat";
+  state.allMessages = [];
   state.botToken = "";
   state.botProfile = null;
   state.hasStoredToken = false;
+  state.mapDrawerGroupKey = "";
   state.pollOffset = 0;
   fileUrlCache.clear();
+  closeMapDrawer();
+  if (state.mapMarkers.length) {
+    state.mapMarkers.forEach((marker) => marker.remove());
+    state.mapMarkers = [];
+  }
   elements.tokenInput.value = "";
   elements.input.value = "";
   autosizeTextarea(elements);
@@ -620,6 +991,9 @@ async function handleWipe() {
   setAuthMode();
   resetAuthInput();
   renderMessages(elements, []);
+  renderLibrary();
+  renderMapMarkers();
+  syncTabs();
   showAuthOverlay(elements);
   syncComposer();
   setStatus(elements, "Локальное хранилище очищено.");
@@ -628,6 +1002,27 @@ async function handleWipe() {
 function handleSettingsClick() {
   showLockedScreen();
   setStatus(elements, "Экран входа открыт.");
+}
+
+function handleTabClick(event) {
+  const button = event.target.closest("[data-tab]");
+
+  if (!button) {
+    return;
+  }
+
+  state.activeTab = button.dataset.tab || "chat";
+  syncTabs();
+
+  if (state.activeTab === "map") {
+    renderMapMarkers();
+  }
+
+  if (state.activeTab === "map" && state.mapInstance) {
+    window.setTimeout(() => {
+      state.mapInstance.resize();
+    }, 60);
+  }
 }
 
 async function init() {
@@ -643,6 +1038,9 @@ async function init() {
 
   renderEmojiGrid(elements);
   autosizeTextarea(elements);
+  syncTabs();
+  renderLibrary();
+  renderMapMarkers();
 
   const tokenResult = await getSetting(ENCRYPTED_TOKEN_KEY);
   state.hasStoredToken = Boolean(tokenResult.data);
@@ -660,7 +1058,11 @@ async function init() {
   elements.emojiClearButton.addEventListener("click", handleEmojiClear);
   elements.emojiGrid.addEventListener("click", handleEmojiPick);
   elements.input.addEventListener("input", () => autosizeTextarea(elements));
+  elements.mapDrawerClose.addEventListener("click", closeMapDrawer);
   elements.settingsButton.addEventListener("click", handleSettingsClick);
+  elements.tabButtons.forEach((button) => {
+    button.addEventListener("click", handleTabClick);
+  });
   elements.tokenInput.addEventListener("input", () => {
     setAuthMode();
     resetAuthInput();

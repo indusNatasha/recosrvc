@@ -145,6 +145,19 @@ export async function getMessages(chatId) {
   }
 }
 
+export async function getAllMessages() {
+  try {
+    const db = await getDb();
+    const tx = db.transaction(STORE_MESSAGES, "readonly");
+    const store = tx.objectStore(STORE_MESSAGES);
+    const records = await requestToPromise(store.getAll());
+    records.sort((left, right) => (right.createdAt || 0) - (left.createdAt || 0));
+    return ok(records);
+  } catch (error) {
+    return fail(error);
+  }
+}
+
 export async function getUpdatesCount() {
   try {
     const db = await getDb();

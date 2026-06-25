@@ -113,7 +113,7 @@ textarea {
   max-height: calc(100dvh - 42px - var(--safe-top) - var(--safe-bottom));
   margin: 0 auto;
   display: grid;
-  grid-template-rows: auto 1fr auto;
+  grid-template-rows: auto auto 1fr;
   background: linear-gradient(180deg, rgba(255, 253, 249, 0.92), rgba(246, 240, 229, 0.88));
   border: 1px solid rgba(255, 255, 255, 0.72);
   border-radius: 34px;
@@ -246,6 +246,102 @@ textarea {
   background:
     linear-gradient(rgba(255, 248, 236, 0.88), rgba(255, 248, 236, 0.88)),
     radial-gradient(circle at center, rgba(30, 159, 136, 0.07), transparent 35%);
+}
+
+.tab-bar {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  padding: 10px 14px 12px;
+  border-bottom: 1px solid var(--line);
+  background: rgba(255, 255, 255, 0.38);
+}
+
+.inside-telegram .tab-bar {
+  background: var(--tg-header-bg);
+}
+
+.tab-button {
+  min-height: 40px;
+  border: 1px solid rgba(111, 92, 67, 0.14);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.78);
+  color: var(--muted);
+  font-weight: 700;
+}
+
+.tab-button.active {
+  border-color: transparent;
+  background: linear-gradient(135deg, var(--brand), var(--brand-deep));
+  color: var(--brand-contrast);
+}
+
+.inside-telegram .tab-button {
+  background: var(--tg-surface);
+  color: var(--text);
+  border-color: var(--line);
+}
+
+.inside-telegram .tab-button.active {
+  border-color: transparent;
+}
+
+.tab-panel {
+  display: none;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.tab-panel.active {
+  display: flex;
+  flex-direction: column;
+}
+
+#chat-panel {
+  min-height: 0;
+}
+
+.panel-stack {
+  min-height: 0;
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 12px;
+  padding: 14px;
+  overflow: hidden;
+  background:
+    linear-gradient(rgba(255, 248, 236, 0.88), rgba(255, 248, 236, 0.88)),
+    radial-gradient(circle at center, rgba(30, 159, 136, 0.07), transparent 35%);
+}
+
+.inside-telegram .panel-stack {
+  background: var(--tg-section-bg);
+}
+
+.panel-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.panel-title {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.panel-empty {
+  padding: 18px;
+  border-radius: 20px;
+  background: rgba(255, 255, 255, 0.72);
+  color: var(--muted);
+  text-align: center;
+}
+
+.inside-telegram .panel-empty {
+  background: var(--tg-surface);
 }
 
 .inside-telegram .chat-stage {
@@ -633,6 +729,229 @@ textarea {
   box-shadow: none;
 }
 
+.library-groups {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.library-group {
+  border-radius: 20px;
+  background: rgba(255, 255, 255, 0.72);
+  border: 1px solid rgba(255, 255, 255, 0.74);
+  overflow: hidden;
+}
+
+.inside-telegram .library-group {
+  background: var(--tg-surface);
+  border-color: var(--line);
+}
+
+.library-summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 14px 16px;
+  cursor: pointer;
+  font-weight: 700;
+  list-style: none;
+}
+
+.library-summary::-webkit-details-marker {
+  display: none;
+}
+
+.library-items {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 0 12px 12px;
+}
+
+.library-item {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px;
+  border-radius: 16px;
+  background: rgba(248, 242, 232, 0.9);
+}
+
+.inside-telegram .library-item {
+  background: var(--tg-section-bg);
+}
+
+.library-item-meta {
+  margin: 0;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.library-item-title {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.library-item-text {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.45;
+  color: var(--muted);
+  white-space: pre-wrap;
+}
+
+.library-media,
+.library-audio {
+  width: 100%;
+  border-radius: 14px;
+}
+
+.library-media {
+  max-height: 280px;
+  object-fit: cover;
+  background: rgba(255, 255, 255, 0.78);
+}
+
+.map-stage {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+  background: rgba(8, 24, 38, 0.12);
+}
+
+.map-canvas {
+  position: absolute;
+  inset: 0;
+}
+
+.map-hud {
+  position: absolute;
+  top: 14px;
+  left: 14px;
+  right: 14px;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 12px 14px;
+  border-radius: 18px;
+  background: rgba(255, 251, 245, 0.84);
+  backdrop-filter: blur(8px);
+}
+
+.inside-telegram .map-hud {
+  background: rgba(18, 18, 18, 0.12);
+}
+
+.map-empty {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  z-index: 2;
+  transform: translate(-50%, -50%);
+  padding: 12px 14px;
+  border-radius: 16px;
+  background: rgba(255, 251, 245, 0.9);
+  color: var(--muted);
+  text-align: center;
+}
+
+.inside-telegram .map-empty {
+  background: var(--tg-surface);
+}
+
+.map-marker {
+  position: relative;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: 2px solid rgba(255, 255, 255, 0.92);
+  border-radius: 50% 50% 50% 0;
+  transform: rotate(-45deg);
+  background: linear-gradient(135deg, var(--brand), var(--brand-deep));
+  box-shadow: 0 8px 18px rgba(0, 0, 0, 0.25);
+}
+
+.map-marker-count {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  transform: rotate(45deg);
+  font-size: 10px;
+  font-weight: 700;
+  color: #fff;
+}
+
+.map-drawer {
+  position: absolute;
+  left: 12px;
+  right: 12px;
+  bottom: 12px;
+  z-index: 3;
+  max-height: 52%;
+  display: flex;
+  flex-direction: column;
+  border-radius: 22px;
+  background: rgba(255, 251, 245, 0.95);
+  border: 1px solid rgba(255, 255, 255, 0.8);
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.18);
+  overflow: hidden;
+}
+
+.inside-telegram .map-drawer {
+  background: var(--tg-surface);
+  border-color: var(--line);
+}
+
+.map-drawer-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--line);
+}
+
+.map-drawer-list {
+  overflow-y: auto;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.map-drawer-item {
+  padding: 12px;
+  border-radius: 16px;
+  background: rgba(248, 242, 232, 0.92);
+}
+
+.inside-telegram .map-drawer-item {
+  background: var(--tg-section-bg);
+}
+
+.map-drawer-meta {
+  margin: 0 0 6px;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.map-drawer-text {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.45;
+  white-space: pre-wrap;
+}
+
 @keyframes pulse {
   0%,
   80%,
@@ -668,6 +987,12 @@ textarea {
   }
 
   .chat-toolbar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .panel-head,
+  .map-hud {
     flex-direction: column;
     align-items: stretch;
   }
