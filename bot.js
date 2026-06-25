@@ -12,19 +12,25 @@ const textDecoder = new TextDecoder();
 export function setupTelegram() {
   try {
     const tg = window.Telegram?.WebApp;
+    const root = document.documentElement;
 
     if (!tg) {
+      root.classList.remove("inside-telegram");
       return ok({ insideTelegram: false });
     }
 
     tg.ready();
+    root.classList.add("inside-telegram");
+
+    if (tg.expand) {
+      tg.expand();
+    }
 
     if (tg.disableVerticalSwipes) {
       tg.disableVerticalSwipes();
     }
 
     const theme = tg.themeParams || {};
-    const root = document.documentElement;
 
     if (theme.text_color) {
       root.style.setProperty("--text", theme.text_color);

@@ -61,6 +61,10 @@ textarea {
   overflow: hidden;
 }
 
+.inside-telegram .app-shell {
+  padding: var(--safe-top) 0 var(--safe-bottom);
+}
+
 .ambient {
   position: absolute;
   border-radius: 999px;
@@ -100,6 +104,15 @@ textarea {
   box-shadow: var(--shadow);
   backdrop-filter: blur(20px);
   overflow: hidden;
+}
+
+.inside-telegram .phone-frame {
+  width: 100%;
+  height: calc(100dvh - var(--safe-top) - var(--safe-bottom));
+  max-height: calc(100dvh - var(--safe-top) - var(--safe-bottom));
+  border-radius: 0;
+  border-inline: 0;
+  box-shadow: none;
 }
 
 .auth-overlay {
