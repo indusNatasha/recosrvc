@@ -188,6 +188,14 @@ function summarizeMessage(message) {
   }
 
   if (message.document) {
+    if ((message.document.mime_type || "").indexOf("video/") === 0) {
+      return "[video]";
+    }
+
+    if ((message.document.mime_type || "").indexOf("audio/") === 0) {
+      return `[audio] ${message.document.file_name || ""}`.trim();
+    }
+
     return `[file] ${message.document.file_name || ""}`.trim();
   }
 
@@ -234,12 +242,29 @@ function getDocumentMedia(message) {
     return null;
   }
 
+  const mimeType = message.document.mime_type || "";
+  const fileName = (message.document.file_name || "").toLowerCase();
+  let kind = "document";
+
+  if (
+    mimeType.indexOf("video/") === 0 ||
+    /\.(mp4|webm|mov|m4v)$/i.test(fileName)
+  ) {
+    kind = "video";
+  } else if (
+    mimeType.indexOf("audio/") === 0 ||
+    /\.(mp3|m4a|ogg|wav|aac|flac)$/i.test(fileName)
+  ) {
+    kind = "audio";
+  }
+
   return {
+    duration: 0,
     fileId: message.document.file_id || "",
     fileName: message.document.file_name || "",
     height: Number(message.document.thumbnail?.height || 0),
-    kind: "document",
-    mimeType: message.document.mime_type || "",
+    kind,
+    mimeType,
     size: Number(message.document.file_size || 0),
     thumbFileId: message.document.thumbnail?.file_id || "",
     width: Number(message.document.thumbnail?.width || 0),

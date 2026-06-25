@@ -401,6 +401,10 @@ textarea {
   white-space: pre-wrap;
 }
 
+.message-text-muted {
+  color: var(--muted);
+}
+
 .message-media {
   display: block;
   width: 100%;
@@ -409,6 +413,16 @@ textarea {
   margin: 0 0 8px;
   border-radius: 16px;
   object-fit: cover;
+  background: rgba(255, 255, 255, 0.75);
+}
+
+.message-video {
+  display: block;
+  width: 100%;
+  max-width: 260px;
+  max-height: 260px;
+  margin: 0 0 8px;
+  border-radius: 16px;
   background: rgba(255, 255, 255, 0.75);
 }
 

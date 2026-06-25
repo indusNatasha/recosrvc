@@ -1,5 +1,52 @@
 import { EMOJI_ALPHABET, formatTime } from "./helpers.js";
 
+function formatMediaDuration(seconds) {
+  const total = Number(seconds || 0);
+  const mins = Math.floor(total / 60);
+  const secs = total % 60;
+
+  if (!total) {
+    return "";
+  }
+
+  return `${mins}:${String(secs).padStart(2, "0")}`;
+}
+
+function buildMediaLabel(media) {
+  if (!media) {
+    return "";
+  }
+
+  if (media.kind === "audio") {
+    const parts = [media.performer, media.title || media.fileName, formatMediaDuration(media.duration)];
+    return parts.filter(Boolean).join(" • ");
+  }
+
+  if (media.kind === "voice") {
+    return ["voice", formatMediaDuration(media.duration)].filter(Boolean).join(" • ");
+  }
+
+  if (media.kind === "document") {
+    return media.fileName || media.mimeType || "file";
+  }
+
+  return "";
+}
+
+function shouldHideMediaPlaceholder(text, media) {
+  if (!media || !text) {
+    return false;
+  }
+
+  return (
+    (text === "[photo]" && media.kind === "photo") ||
+    (text === "[video]" && media.kind === "video") ||
+    (text.indexOf("[audio]") === 0 && media.kind === "audio") ||
+    (text === "[voice]" && media.kind === "voice") ||
+    (text.indexOf("[file]") === 0 && media.kind === "document")
+  );
+}
+
 export function getElements() {
   return {
     authForm: document.getElementById("auth-form"),
@@ -128,13 +175,33 @@ export function renderMessages(elements, messages) {
           }
         : null);
     const mediaView = message.mediaView || {};
+    const mediaLabel = buildMediaLabel(media);
 
     node.classList.add(message.role || "system");
     node.querySelector(".message-author").textContent = message.senderName || "Telegram";
 
-    if (
+    if (media && media.kind === "video" && mediaView.mediaUrl) {
+      const video = document.createElement("video");
+
+      video.className = "message-video";
+      video.controls = true;
+      video.playsInline = true;
+      video.preload = "none";
+      video.src = mediaView.mediaUrl;
+
+      if (mediaView.thumbUrl) {
+        video.poster = mediaView.thumbUrl;
+      }
+
+      if (media.width && media.height) {
+        video.width = media.width;
+        video.height = media.height;
+      }
+
+      bubble.insertBefore(video, textNode);
+    } else if (
       media &&
-      ["photo", "video", "document"].includes(media.kind) &&
+      ["photo", "document"].includes(media.kind) &&
       (mediaView.mediaUrl || mediaView.thumbUrl)
     ) {
       const mediaNode = document.createElement("img");
@@ -166,12 +233,18 @@ export function renderMessages(elements, messages) {
       bubble.insertBefore(audio, textNode);
     }
 
-    textNode.textContent =
-      message.text && (message.text !== "[photo]" || media?.kind !== "photo")
-        ? message.text
-        : mediaView.mediaUrl || mediaView.thumbUrl
-          ? ""
-          : "[empty]";
+    textNode.textContent = shouldHideMediaPlaceholder(message.text, media)
+      ? ""
+      : message.text || "";
+
+    if (!textNode.textContent && mediaLabel) {
+      textNode.textContent = mediaLabel;
+      textNode.classList.add("message-text-muted");
+    }
+
+    if (!textNode.textContent && !(mediaView.mediaUrl || mediaView.thumbUrl)) {
+      textNode.textContent = "[empty]";
+    }
 
     node.querySelector(".message-chat").textContent = message.chatTitle || "";
     node.querySelector(".message-time").textContent = message.time || formatTime();
