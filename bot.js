@@ -9,6 +9,55 @@ import {
 const textEncoder = new TextEncoder();
 const textDecoder = new TextDecoder();
 
+function applyTelegramTheme(root, tg) {
+  const theme = tg.themeParams || {};
+  const isDark = tg.colorScheme === "dark";
+
+  root.classList.toggle("theme-dark", isDark);
+  root.classList.toggle("theme-light", !isDark);
+  root.style.colorScheme = isDark ? "dark" : "light";
+
+  if (theme.text_color) {
+    root.style.setProperty("--text", theme.text_color);
+    root.style.setProperty("--brand-deep", theme.text_color);
+  }
+
+  if (theme.hint_color) {
+    root.style.setProperty("--muted", theme.hint_color);
+  }
+
+  if (theme.button_color) {
+    root.style.setProperty("--brand", theme.button_color);
+  }
+
+  if (theme.button_text_color) {
+    root.style.setProperty("--brand-contrast", theme.button_text_color);
+  }
+
+  if (theme.bg_color) {
+    root.style.setProperty("--tg-bg", theme.bg_color);
+    root.style.setProperty("--tg-bubble-user", theme.bg_color);
+  }
+
+  if (theme.secondary_bg_color) {
+    root.style.setProperty("--tg-surface", theme.secondary_bg_color);
+    root.style.setProperty("--tg-input-bg", theme.secondary_bg_color);
+    root.style.setProperty("--tg-bubble-bot", theme.secondary_bg_color);
+  }
+
+  if (theme.header_bg_color) {
+    root.style.setProperty("--tg-header-bg", theme.header_bg_color);
+  }
+
+  if (theme.section_bg_color) {
+    root.style.setProperty("--tg-section-bg", theme.section_bg_color);
+  }
+
+  if (theme.section_separator_color) {
+    root.style.setProperty("--line", theme.section_separator_color);
+  }
+}
+
 export function setupTelegram() {
   try {
     const tg = window.Telegram?.WebApp;
@@ -16,6 +65,8 @@ export function setupTelegram() {
 
     if (!tg) {
       root.classList.remove("inside-telegram");
+      root.classList.remove("theme-dark");
+      root.classList.remove("theme-light");
       return ok({ insideTelegram: false });
     }
 
@@ -30,18 +81,12 @@ export function setupTelegram() {
       tg.disableVerticalSwipes();
     }
 
-    const theme = tg.themeParams || {};
+    applyTelegramTheme(root, tg);
 
-    if (theme.text_color) {
-      root.style.setProperty("--text", theme.text_color);
-    }
-
-    if (theme.hint_color) {
-      root.style.setProperty("--muted", theme.hint_color);
-    }
-
-    if (theme.button_color) {
-      root.style.setProperty("--brand", theme.button_color);
+    if (tg.onEvent) {
+      tg.onEvent("themeChanged", () => {
+        applyTelegramTheme(root, tg);
+      });
     }
 
     return ok({

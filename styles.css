@@ -4,9 +4,17 @@
   --text: #1f252d;
   --muted: #617080;
   --brand: #1e9f88;
+  --brand-contrast: #ffffff;
   --brand-deep: #157565;
   --bot-bubble: #ffffff;
   --user-bubble: #d8f8d0;
+  --tg-bg: #f7f0e3;
+  --tg-surface: rgba(255, 253, 249, 0.92);
+  --tg-section-bg: rgba(246, 240, 229, 0.88);
+  --tg-header-bg: rgba(255, 255, 255, 0.86);
+  --tg-input-bg: rgba(255, 255, 255, 0.92);
+  --tg-bubble-bot: #ffffff;
+  --tg-bubble-user: #d8f8d0;
   --shadow: 0 24px 70px rgba(70, 44, 10, 0.14);
   --safe-top: env(safe-area-inset-top, 0px);
   --safe-bottom: env(safe-area-inset-bottom, 0px);
@@ -65,6 +73,14 @@ textarea {
   padding: var(--safe-top) 0 var(--safe-bottom);
 }
 
+.inside-telegram body {
+  background: var(--tg-bg);
+}
+
+.inside-telegram .ambient {
+  display: none;
+}
+
 .ambient {
   position: absolute;
   border-radius: 999px;
@@ -110,6 +126,8 @@ textarea {
   width: 100%;
   height: calc(100dvh - var(--safe-top) - var(--safe-bottom));
   max-height: calc(100dvh - var(--safe-top) - var(--safe-bottom));
+  background: var(--tg-surface);
+  border-color: var(--line);
   border-radius: 0;
   border-inline: 0;
   box-shadow: none;
@@ -126,6 +144,10 @@ textarea {
   backdrop-filter: blur(18px);
 }
 
+.inside-telegram .auth-overlay {
+  background: var(--tg-bg);
+}
+
 .auth-card {
   width: 100%;
   max-width: 360px;
@@ -136,6 +158,12 @@ textarea {
   border-radius: 28px;
   background: rgba(255, 251, 245, 0.92);
   box-shadow: 0 18px 40px rgba(72, 52, 24, 0.12);
+}
+
+.inside-telegram .auth-card {
+  background: var(--tg-surface);
+  color: var(--text);
+  box-shadow: none;
 }
 
 .chat-title h1,
@@ -151,6 +179,10 @@ textarea {
   padding: 18px 18px 16px;
   background: linear-gradient(180deg, rgba(255, 255, 255, 0.86), rgba(255, 255, 255, 0.54));
   border-bottom: 1px solid var(--line);
+}
+
+.inside-telegram .chat-header {
+  background: var(--tg-header-bg);
 }
 
 .chat-title {
@@ -198,6 +230,12 @@ textarea {
   box-shadow: 0 8px 18px rgba(72, 52, 24, 0.08);
 }
 
+.inside-telegram .icon-button {
+  background: var(--tg-surface);
+  color: var(--text);
+  box-shadow: none;
+}
+
 .chat-stage {
   display: flex;
   flex-direction: column;
@@ -208,6 +246,10 @@ textarea {
   background:
     linear-gradient(rgba(255, 248, 236, 0.88), rgba(255, 248, 236, 0.88)),
     radial-gradient(circle at center, rgba(30, 159, 136, 0.07), transparent 35%);
+}
+
+.inside-telegram .chat-stage {
+  background: var(--tg-section-bg);
 }
 
 .chat-toolbar {
@@ -249,6 +291,12 @@ textarea {
   outline: none;
 }
 
+.inside-telegram .text-input {
+  background: var(--tg-input-bg);
+  color: var(--text);
+  border-color: var(--line);
+}
+
 .select-input {
   appearance: none;
 }
@@ -263,6 +311,12 @@ textarea {
   border: 1px solid rgba(255, 255, 255, 0.72);
   color: var(--muted);
   font-size: 12px;
+}
+
+.inside-telegram .badge {
+  background: var(--tg-surface);
+  border-color: var(--line);
+  color: var(--muted);
 }
 
 .emoji-auth {
@@ -284,6 +338,11 @@ textarea {
   border: 1px solid rgba(255, 255, 255, 0.7);
 }
 
+.inside-telegram .emoji-keyboard {
+  background: var(--tg-section-bg);
+  border-color: var(--line);
+}
+
 .emoji-key-button {
   min-height: 52px;
   border: 0;
@@ -291,6 +350,12 @@ textarea {
   background: rgba(255, 255, 255, 0.92);
   box-shadow: 0 10px 18px rgba(72, 52, 24, 0.06);
   font-size: 28px;
+}
+
+.inside-telegram .emoji-key-button {
+  background: var(--tg-surface);
+  color: var(--text);
+  box-shadow: none;
 }
 
 .emoji-key-button.selected {
@@ -326,6 +391,12 @@ textarea {
   color: var(--text);
   font-weight: 700;
   box-shadow: 0 10px 20px rgba(72, 52, 24, 0.08);
+}
+
+.inside-telegram .secondary-button {
+  background: var(--tg-surface);
+  color: var(--text);
+  box-shadow: none;
 }
 
 .secondary-button-muted {
@@ -398,6 +469,18 @@ textarea {
 .message.system .bubble {
   max-width: 100%;
   background: rgba(255, 255, 255, 0.72);
+}
+
+.inside-telegram .message.bot .bubble {
+  background: var(--tg-bubble-bot);
+}
+
+.inside-telegram .message.user .bubble {
+  background: var(--tg-bubble-user);
+}
+
+.inside-telegram .message.system .bubble {
+  background: var(--tg-surface);
 }
 
 .message-author {
@@ -495,6 +578,10 @@ textarea {
   background: rgba(255, 253, 249, 0.9);
 }
 
+.inside-telegram .composer {
+  background: var(--tg-header-bg);
+}
+
 .composer-input {
   min-height: 54px;
   display: flex;
@@ -504,6 +591,12 @@ textarea {
   background: rgba(255, 255, 255, 0.94);
   border: 1px solid rgba(255, 255, 255, 0.74);
   box-shadow: 0 10px 18px rgba(72, 52, 24, 0.06);
+}
+
+.inside-telegram .composer-input {
+  background: var(--tg-input-bg);
+  border-color: var(--line);
+  box-shadow: none;
 }
 
 .composer textarea {
@@ -529,6 +622,10 @@ textarea {
   color: #fff;
   font-weight: 700;
   box-shadow: 0 14px 24px rgba(30, 159, 136, 0.26);
+}
+
+.inside-telegram .send-button {
+  color: var(--brand-contrast);
 }
 
 .send-button:disabled {
