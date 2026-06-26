@@ -1,244 +1,33 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="ru">
-  <head>
-    <meta charset="UTF-8" />
-    <meta
-      name="viewport"
-      content="width=device-width, initial-scale=1, viewport-fit=cover"
-    />
-    <title>miniAppBot</title>
-    <meta
-      name="description"
-      content="Мобильный интерфейс Telegram Mini App с локальным входом по emoji-ключу."
-    />
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link
-      href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&display=swap"
-      rel="stylesheet"
-    />
-    <link
-      href="https://unpkg.com/maplibre-gl@5.6.0/dist/maplibre-gl.css"
-      rel="stylesheet"
-    />
+<head>
+    <meta charset="UTF-8">
+    <!-- Важно для мобилок: запрещаем зум, чтобы Mini App не дергался как обычный сайт -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <title>AAA Project</title>
+
+    <!-- 1. Подключаем официальный скрипт Telegram WebApp SDK -->
+    <script src="https://telegram.org"></script>
+
     <link rel="stylesheet" href="./styles.css" />
-    <script src="https://telegram.org/js/telegram-web-app.js"></script>
-    <script src="https://unpkg.com/maplibre-gl@5.6.0/dist/maplibre-gl.js"></script>
-  </head>
-  <body>
-    <div class="app-shell">
-      <div class="ambient ambient-top"></div>
-      <div class="ambient ambient-bottom"></div>
 
-      <main class="phone-frame">
-        <section class="auth-overlay" id="auth-overlay">
-          <div class="auth-card">
-            <div class="hidden" id="auth-title"></div>
-            <div class="hidden" id="auth-text"></div>
+    <!-- 2. Подключаем стили и скрипт карты Leaflet (OpenStreetMap) напрямую из CDN -->
+    <link rel="stylesheet" href="https://unpkg.com" />
+    <script src="https://unpkg.com"></script>    
+</head>
+<body>
 
-            <form class="auth-form" id="auth-form" autocomplete="off">
-              <label class="field" id="token-field">
-                <input
-                  class="text-input"
-                  id="token-input"
-                  name="token"
-                  type="password"
-                  placeholder="Bot token"
-                  inputmode="text"
-                />
-              </label>
-
-              <div class="emoji-auth">
-                <div class="emoji-grid emoji-keyboard" id="emoji-grid" aria-label="Emoji keyboard">
-                  <button class="emoji-key-button" type="button" data-emoji-id="sun">☀️</button>
-                  <button class="emoji-key-button" type="button" data-emoji-id="moon">🌙</button>
-                  <button class="emoji-key-button" type="button" data-emoji-id="wave">🌊</button>
-                  <button class="emoji-key-button" type="button" data-emoji-id="flame">🔥</button>
-                  <button class="emoji-key-button" type="button" data-emoji-id="leaf">🍀</button>
-                  <button class="emoji-key-button" type="button" data-emoji-id="apple">🍎</button>
-                  <button class="emoji-key-button" type="button" data-emoji-id="balloon">🎈</button>
-                  <button class="emoji-key-button" type="button" data-emoji-id="dice">🎲</button>
-                  <button class="emoji-key-button" type="button" data-emoji-id="gem">💎</button>
-                  <button class="emoji-key-button" type="button" data-emoji-id="rocket">🚀</button>
-                  <button class="emoji-key-button" type="button" data-emoji-id="star">⭐</button>
-                  <button class="emoji-key-button" type="button" data-emoji-id="cloud">☁️</button>
-                </div>
-
-                <div class="action-row">
-                  <button
-                    class="secondary-button secondary-button-muted action-half"
-                    type="button"
-                    id="emoji-clear-button"
-                  >
-                    Очистить
-                  </button>
-                  <button class="secondary-button action-half" type="submit" id="auth-submit-button">
-                    Продолжить
-                  </button>
-                </div>
-
-                <div class="hidden" id="auth-note"></div>
-              </div>
-            </form>
-
-            <div class="action-row auth-footer hidden" id="wipe-row">
-              <button class="secondary-button secondary-button-muted action-full" type="button" id="wipe-button">
-                Сбросить хранилище
-              </button>
-            </div>
-          </div>
-        </section>
-
-        <header class="chat-header">
-          <div class="chat-title">
-            <div class="avatar">MB</div>
-            <div>
-              <p class="eyebrow">Telegram Mini App</p>
-              <!-- <h1>miniAppBot</h1> -->
-              <p class="status" id="chat-status">подключаем Telegram...</p>
-            </div>
-          </div>
-
-          <button class="icon-button" type="button" id="settings-button" aria-label="Экран входа">
-            <span aria-hidden="true">&#8942;</span>
-          </button>
-        </header>
-
-        <nav class="tab-bar" aria-label="Разделы">
-          <button class="tab-button active" type="button" data-tab="chat">Чат</button>
-          <button class="tab-button" type="button" data-tab="files">Файлы</button>
-          <button class="tab-button" type="button" data-tab="map">Карта</button>
-        </nav>
-
-        <section class="tab-panel active" id="chat-panel" data-panel="chat">
-          <section class="chat-stage">
-            <div class="chat-toolbar">
-              <label class="field grow">
-                <span class="field-label">Активный чат</span>
-                <select class="text-input select-input" id="chat-picker">
-                  <option value="">Ждем апдейты...</option>
-                </select>
-              </label>
-
-              <div class="toolbar-badges">
-                <span class="badge" id="updates-badge">0 updates</span>
-                <span class="badge" id="polling-badge">idle</span>
-              </div>
-            </div>
-
-            <div class="message-list" id="message-list" aria-live="polite"></div>
-
-            <div class="typing-indicator hidden" id="typing-indicator">
-              <span></span>
-              <span></span>
-              <span></span>
-            </div>
-          </section>
-
-          <form class="composer" id="chat-form">
-            <label class="composer-input">
-              <span class="sr-only">Сообщение</span>
-              <textarea
-                id="message-input"
-                name="message"
-                rows="1"
-                maxlength="500"
-                placeholder="Напиши сообщение..."
-              ></textarea>
-            </label>
-
-            <button class="send-button" type="submit" id="send-button">
-              <span>Отправить</span>
-            </button>
-          </form>
-        </section>
-
-        <section class="tab-panel" id="files-panel" data-panel="files">
-          <div class="panel-stack">
-            <div class="panel-head">
-              <p class="panel-title">Файловый менеджер</p>
-              <div class="toolbar-badges">
-                <span class="badge" id="library-badge">0 файлов</span>
-                <span class="badge" id="library-text-badge">0 текстов</span>
-              </div>
-            </div>
-            <div class="library-groups" id="library-groups"></div>
-          </div>
-        </section>
-
-        <section class="tab-panel" id="map-panel" data-panel="map">
-          <div class="map-stage">
-            <div class="map-canvas" id="map-canvas"></div>
-            <div class="map-hud">
-              <p class="panel-title">Карта локаций</p>
-              <div class="toolbar-badges">
-                <span class="badge" id="map-points-badge">0 точек</span>
-                <span class="badge" id="map-messages-badge">0 локаций</span>
-              </div>
-            </div>
-            <div class="map-empty" id="map-empty">Локаций пока нет.</div>
-            <aside class="map-drawer hidden" id="map-drawer" aria-hidden="true">
-              <div class="map-drawer-head">
-                <h3 class="drawer-title" id="map-drawer-title">Точка</h3>
-                <button class="secondary-button secondary-button-muted" type="button" id="map-drawer-close">
-                  Закрыть
-                </button>
-              </div>
-              <div class="map-drawer-list" id="map-drawer-list"></div>
-            </aside>
-          </div>
-        </section>
-      </main>
+    <!-- ЭКРАН 1: Загрузка и FaceID -->
+    <div id="loading-screen">
+        <h2 id="status-text">Инициализация AAA...</h2>
+        <button id="retry-btn" class="btn-retry">Войти снова</button>
     </div>
 
-    <template id="message-template">
-      <article class="message">
-        <div class="bubble">
-          <p class="message-author"></p>
-          <p class="message-text"></p>
-          <div class="message-meta">
-            <span class="message-chat"></span>
-            <time class="message-time"></time>
-          </div>
-        </div>
-      </article>
-    </template>
+    <!-- ЭКРАН 2: Карта OpenStreetMap -->
+    <div id="map-container"></div>
 
-    <script>
-      if (window.location.protocol === "file:") {
-        const authTitle = document.getElementById("auth-title");
-        const authText = document.getElementById("auth-text");
-        const authForm = document.getElementById("auth-form");
-        const authNote = document.getElementById("auth-note");
-        const status = document.getElementById("chat-status");
+    <!-- 3. Запускаем наш главный скрипт КАК МОДУЛЬ. Это позволит использовать export/import в браузере без сборщиков кода! -->
+    <script type="module" src="app.js"></script>
 
-        if (authTitle) {
-          authTitle.textContent = "Нужен локальный сервер";
-        }
-
-        if (authText) {
-          authText.textContent =
-            "Браузер блокирует ES-модули и запросы из file://. Открой эту папку через http://localhost.";
-        }
-
-        if (authForm) {
-          authForm.innerHTML =
-            '<div class="panel-note">Запусти в папке проекта: <code>python3 -m http.server 8080</code><br />Потом открой: <code>http://localhost:8080</code></div>';
-        }
-
-        if (authNote) {
-          authNote.textContent = "Режим file:// для этого интерфейса не подходит.";
-        }
-
-        if (status) {
-          status.textContent = "открыто через file://, нужен http://";
-        }
-      } else {
-        const script = document.createElement("script");
-        script.type = "module";
-        script.src = "./app.js";
-        document.body.appendChild(script);
-      }
-    </script>
-  </body>
+</body>
 </html>
