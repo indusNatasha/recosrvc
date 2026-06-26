@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <!-- Важно для мобилок: запрещаем зум, чтобы Mini App не дергался как обычный сайт -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <title>AAA Project</title>
+
+    <!-- 1. Подключаем официальный скрипт Telegram WebApp SDK -->
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+
+    <link rel="stylesheet" href="./css/styles.css" />
+</head>
+<body>
+
+    <!-- ЭКРАН 1: Загрузка и FaceID -->
+    <div id="loading-screen">
+        <h2 id="status-text">Инициализация AAA...</h2>
+        <button id="retry-btn" class="btn-retry">Войти снова</button>
+    </div>
+
+    <!-- ЭКРАН 2: Карта OpenStreetMap -->
+    <div id="map-container"></div>
+
+    <!-- 3. Запускаем наш главный скрипт КАК МОДУЛЬ. Это позволит использовать export/import в браузере без сборщиков кода! -->
+    <script type="module" src="js/app.js"></script>
+
+</body>
+</html>
