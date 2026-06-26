@@ -1,4 +1,4 @@
-import { initBiometric, authenticateUser } from "./biometric";
+import { initBiometric, authenticateUser } from "./biometric.js";
 
 
 export function runSecureLogin(statusTextEl, retryBtnEl) {
